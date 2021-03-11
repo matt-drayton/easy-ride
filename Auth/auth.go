@@ -78,7 +78,34 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 
 	// Return JSON with user information encoded
 	json.NewEncoder(w).Encode(userInfo)
-	log.Printf("JWT Token successfully created for user %s.", username)
+	log.Printf("JWT Token successfully created for user %s.", username )
+}
+
+func verifyToken(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	rawToken := vars["token"]
+
+	// Surprisingly hard to find documentation for the function below.
+	// https://github.com/dgrijalva/jwt-go/blob/master/MIGRATION_GUIDE.md
+	token, err := jwt.ParseWithClaims(rawToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	claims := token.Claims.(*Claims)
+
+	if err != nil || !token.Valid {
+		log.Println("Invalid or incorrect JWT token received.")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("{\"error\": \"Invalid JWT Token provided.\"}"))
+		return
+	}
+
+	// Since account deletion is not required in spec, we cannot have a valid JWT for an account that does not exist.
+	// Ok to ignore error value below.
+	user, _ := accounts[claims.Username]
+
+	log.Printf("User %s JWT token successfully validated", user.Username)
+	w.WriteHeader(http.StatusOK)
 }
 
 func hashSaltPassword(pwd string) (string, error) {
@@ -116,6 +143,7 @@ func initialiseAccounts() {
 func handleRequests() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/login", signIn).Methods("POST")
+	router.HandleFunc("/validate/{token}", verifyToken).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 
