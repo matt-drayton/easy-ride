@@ -23,6 +23,7 @@ var accounts = map[string] User{}
 
 type Claims struct {
 	Username string `json:"username"`
+	Name string `json:"name"`
 	jwt.StandardClaims
 }
 
@@ -74,12 +75,12 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 		Token: tokenString,
 	}
 
-	// Return JSON with user information encoded
+	// Return JSON with user token encoded
 	json.NewEncoder(w).Encode(userInfo)
 	log.Printf("JWT Token successfully created for user %s.", username )
 }
 
-func verifyToken(w http.ResponseWriter, r *http.Request) {
+func validateToken(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	rawToken := vars["token"]
 
@@ -89,21 +90,25 @@ func verifyToken(w http.ResponseWriter, r *http.Request) {
 		return jwtKey, nil
 	})
 
-	claims := token.Claims.(*Claims)
-
 	if err != nil || !token.Valid {
 		log.Println("Invalid or incorrect JWT token received.")
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("{\"error\": \"Invalid JWT Token provided.\"}"))
+		w.Write([]byte("{\"error\": \"Invalid or incorrect JWT token received.\"}"))
 		return
 	}
+
+	claims := token.Claims.(*Claims)
+
+	
 
 	// Since account deletion is not required in spec, we cannot have a valid JWT for an account that does not exist.
 	// Ok to ignore error value below.
 	user, _ := accounts[claims.Username]
 
 	log.Printf("User %s JWT token successfully validated", user.Username)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
 }
 
 func hashSaltPassword(pwd string) (string, error) {
@@ -141,7 +146,7 @@ func initialiseAccounts() {
 func handleRequests() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/login", signIn).Methods("POST")
-	router.HandleFunc("/validate/{token}", verifyToken).Methods("GET")
+	router.HandleFunc("/validate/{token}", validateToken).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 
