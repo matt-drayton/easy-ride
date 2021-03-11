@@ -1,14 +1,13 @@
 package main
 
 import (
-	// "encoding/json"
+	"encoding/json"
 	"log"
 	"net/http"
 
 	//"os"
 	"time"
 
-	//"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
@@ -19,7 +18,7 @@ var jwtKey = []byte("secret_jwt_key")
 type User struct {
 	Username string `json:"username"`
 	Name string `json:"name"`
-	PasswordHash string
+	PasswordHash string `json:"-"`
 }
 
 var accounts = map[string] User{}
@@ -32,9 +31,12 @@ type Claims struct {
 func signIn(w http.ResponseWriter, r *http.Request) {
 	// Get given username and password values from request
 	r.ParseForm()
+
+	// Set response type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
 	username := r.FormValue("username")
 	password := r.FormValue("password")
-	log.Printf("Attempting sign-in of user %s", username)
 
 	// Lookup user in accounts map. Fetch the hashed password
 	user := accounts[username]
@@ -44,6 +46,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 	if !verifyPassword(hashedPassword, password) {
 		log.Printf("Sign-in of user %s failed.", username)
 		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("{\"error\": \"Incorrect credentials provided\"}"))
 		return
 	}
 
@@ -63,15 +66,19 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 	tokenString, err := token.SignedString(jwtKey)
 
 	if err != nil {
-		log.Println("Error: Could not create JWT.")
+		log.Printf("Error: Could not create JWT for user %s.", username)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name: "token",
-		Value: tokenString,
-		Expires: expirationTime,
-	})
+	userInfo := struct {
+		Token string `json:"token"`
+	}{
+		Token: tokenString,
+	}
+
+	// Return JSON with user information encoded
+	json.NewEncoder(w).Encode(userInfo)
+	log.Printf("JWT Token successfully created for user %s.", username)
 }
 
 func hashSaltPassword(pwd string) (string, error) {
