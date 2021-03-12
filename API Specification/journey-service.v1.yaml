@@ -23,7 +23,7 @@ paths:
         required: true
         description: Journey End Point
     get:
-      summary: Your GET endpoint
+      summary: Get Journey Info
       tags: []
       responses:
         '200':

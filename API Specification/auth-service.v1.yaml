@@ -11,7 +11,7 @@ servers:
 paths:
   /login:
     post:
-      summary: ''
+      summary: Login
       operationId: post-login
       responses:
         '200':
@@ -87,7 +87,7 @@ paths:
         required: true
         description: JWT Token
     get:
-      summary: Your GET endpoint
+      summary: Validate Token
       tags: []
       responses:
         '200':

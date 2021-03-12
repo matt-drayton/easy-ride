@@ -11,7 +11,7 @@ servers:
 paths:
   /roster:
     get:
-      summary: Your GET endpoint
+      summary: Roster Operations
       tags: []
       responses:
         '200':

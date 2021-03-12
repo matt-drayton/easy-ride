@@ -24,7 +24,7 @@ paths:
         required: true
         description: Journey End Point
     get:
-      summary: Your GET endpoint
+      summary: Get Directions
       tags: []
       responses:
         '200':
