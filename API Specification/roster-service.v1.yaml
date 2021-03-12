@@ -2,187 +2,334 @@ openapi: 3.0.0
 info:
   title: roster-service
   version: '1.0'
+  description: 'API responsible for adding, modifying, leaving, and fetching Driver Roster data.'
 servers:
-  - url: 'http://localhost:3000'
+  - url: 'http://localhost:8001'
+    description: External
+  - url: 'http://roster-service:8000'
+    description: Internal
 paths:
-  '/users/{userId}':
-    parameters:
-      - schema:
-          type: integer
-        name: userId
-        in: path
-        required: true
-        description: Id of an existing user.
+  /roster:
     get:
-      summary: Get User Info by User ID
+      summary: Your GET endpoint
       tags: []
       responses:
         '200':
-          description: User Found
+          description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-              examples:
-                Get User Alice Smith:
-                  value:
-                    id: 142
-                    firstName: Alice
-                    lastName: Smith
-                    email: alice.smith@gmail.com
-                    dateOfBirth: '1997-10-31'
-                    emailVerified: true
-                    signUpDate: '2019-08-24'
-        '404':
-          description: User Not Found
-      operationId: get-users-userId
-      description: Retrieve the information of the user with the matching user ID.
-    patch:
-      summary: Update User Information
-      operationId: patch-users-userId
-      responses:
-        '200':
-          description: User Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-              examples:
-                Updated User Rebecca Baker:
-                  value:
-                    id: 13
-                    firstName: Rebecca
-                    lastName: Baker
-                    email: rebecca@gmail.com
-                    dateOfBirth: '1985-10-02'
-                    emailVerified: false
-                    createDate: '2019-08-24'
-        '404':
-          description: User Not Found
-        '409':
-          description: Email Already Taken
-      description: Update the infromation of an existing user.
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                firstName:
-                  type: string
-                lastName:
-                  type: string
-                email:
-                  type: string
-                  description: 'If a new email is given, the user''s email verified property will be set to false.'
-                dateOfBirth:
-                  type: string
-            examples:
-              Update First Name:
-                value:
-                  firstName: Rebecca
-              Update Email:
-                value:
-                  email: rebecca@gmail.com
-              Update Last Name & Date of Birth:
-                value:
-                  lastName: Baker
-                  dateOfBirth: '1985-10-02'
-        description: Patch user properties to update.
-  /user:
+                type: array
+                description: ''
+                minItems: 1
+                uniqueItems: true
+                items:
+                  type: object
+                  required:
+                    - username
+                    - name
+                    - rate
+                  properties:
+                    username:
+                      type: string
+                      minLength: 1
+                    name:
+                      type: string
+                      minLength: 1
+                    rate:
+                      type: number
+      operationId: get-roster
+      description: Fetch list of all drivers currently in the Roster.
     post:
-      summary: Create New User
-      operationId: post-user
+      summary: ''
+      operationId: join-roster
       responses:
         '200':
-          description: User Created
+          description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                description: ''
+                type: object
+                properties:
+                  username:
+                    type: string
+                    minLength: 1
+                  name:
+                    type: string
+                    minLength: 1
+                  rate:
+                    type: number
+                required:
+                  - username
+                  - name
+                  - rate
               examples:
-                New User Bob Fellow:
+                example-1:
                   value:
-                    id: 12
-                    firstName: Bob
-                    lastName: Fellow
-                    email: bob.fellow@gmail.com
-                    dateOfBirth: '1996-08-24'
-                    emailVerified: false
-                    createDate: '2020-11-18'
+                    username: babydriver
+                    name: Ansel Elgort
+                    rate: 15
         '400':
-          description: Missing Required Information
-        '409':
-          description: Email Already Taken
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Request is missing JWT token or rate
+                example-2:
+                  value:
+                    error: User is already in roster
+                example-3:
+                  value:
+                    error: Invalid rate value supplied
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Invalid JWT token
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Parsing request to join roster failed
+      description: Adds a driver with a valid JWT to the Roster
       requestBody:
         content:
           application/json:
             schema:
+              description: ''
               type: object
               properties:
-                firstName:
+                token:
                   type: string
-                lastName:
-                  type: string
-                email:
-                  type: string
-                dateOfBirth:
-                  type: string
-                  format: date
+                  minLength: 1
+                rate:
+                  type: integer
               required:
-                - firstName
-                - lastName
-                - email
-                - dateOfBirth
+                - token
+                - rate
             examples:
-              Create User Bob Fellow:
+              example-1:
                 value:
-                  firstName: Bob
-                  lastName: Fellow
-                  email: bob.fellow@gmail.com
-                  dateOfBirth: '1996-08-24'
-        description: Post the necessary fields for the API to create a new user.
-      description: Create a new user.
+                  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImpvaG5kb2UiLCJuYW1lIjoiIiwiZXhwIjoxNjE1NTAyNTgwfQ.-Y0YwMjO8O2rpXNZswSt4NzpiYuca1QQ1M-dLOSdy6M
+                  rate: 5
+    put:
+      summary: ''
+      operationId: update-roster
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  username:
+                    type: string
+                    minLength: 1
+                  name:
+                    type: string
+                    minLength: 1
+                  rate:
+                    type: number
+                required:
+                  - username
+                  - name
+                  - rate
+              examples:
+                example-1:
+                  value:
+                    username: babydriver
+                    name: Ansel Elgort
+                    rate: 15
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Request is missing JWT token or rate
+                example-2:
+                  value:
+                    error: User is not in roster
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Invalid JWT token
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Parsing request to update roster rate failed
+      description: Updates a driver's rate/km
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: ''
+              type: object
+              properties:
+                token:
+                  type: string
+                  minLength: 1
+                rate:
+                  type: number
+              required:
+                - token
+                - rate
+            examples:
+              example-1:
+                value:
+                  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImpvaG5kb2UiLCJuYW1lIjoiIiwiZXhwIjoxNjE1NTAyNTgwfQ.-Y0YwMjO8O2rpXNZswSt4NzpiYuca1QQ1M-dLOSdy6M
+                  rate: 5
+    delete:
+      summary: ''
+      operationId: leave-roster
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Request is missing JWT token
+                example-2:
+                  value:
+                    error: User is not in roster
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Invalid JWT Token
+        '500':
+          description: Internal Server Error
+          headers: {}
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Parsing request ot leave roster failed
+      description: Removes a driver from the roster
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: ''
+              type: object
+              properties:
+                token:
+                  type: string
+                  minLength: 1
+              required:
+                - token
+            examples:
+              example-1:
+                value:
+                  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImJhYnlkcml2ZXIiLCJuYW1lIjoiIiwiZXhwIjoxNjE1NTUxNjk0fQ.3HzpCbk9IvIbegmxmSb9zOropk_VOt8DRI63YStiPJc
 components:
-  schemas:
-    User:
-      title: User
-      type: object
-      description: ''
-      x-examples:
-        Alice Smith:
-          id: 142
-          firstName: Alice
-          lastName: Smith
-          email: alice.smith@gmail.com
-          dateOfBirth: '1997-10-31'
-          emailVerified: true
-          signUpDate: '2019-08-24'
-      properties:
-        id:
-          type: integer
-          description: Unique identifier for the given user.
-        firstName:
-          type: string
-        lastName:
-          type: string
-        email:
-          type: string
-          format: email
-        dateOfBirth:
-          type: string
-          format: date
-          example: '1997-10-31'
-        emailVerified:
-          type: boolean
-          description: Set to true if the user's email has been verified.
-        createDate:
-          type: string
-          format: date
-          description: The date that the user was created.
-      required:
-        - id
-        - firstName
-        - lastName
-        - email
-        - emailVerified
+  schemas: {}

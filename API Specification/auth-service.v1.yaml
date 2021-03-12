@@ -5,6 +5,9 @@ info:
   description: API responsible for creating and verifying JWT tokens
 servers:
   - url: 'http://localhost:8000'
+    description: External
+  - url: 'http://auth-service:8000'
+    description: Internal
 paths:
   /login:
     post:
