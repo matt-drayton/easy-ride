@@ -225,7 +225,7 @@ func getCheapestDriver(w http.ResponseWriter, r *http.Request) {
 
 	// Find the driver with the lowest rate. This will always be the best driver for the route.
 	for _, currentDriver := range Roster {
-		// If first pass, initialise
+		// If first pass, initialise. Lowest rate can never naturally be -1
 		if lowestRate == -1 {
 			lowestRate = currentDriver.Rate
 			lowestDriver = currentDriver

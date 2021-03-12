@@ -126,18 +126,18 @@ func verifyPassword(hash, password string) bool {
 
 func initialiseAccounts() {
 	// Controlled case should not have error, safe to ignore here.
-	password1, _ := hashSaltPassword("iamjohndoe")
-	password2, _ := hashSaltPassword("iambobross")
+	password1, _ := hashSaltPassword("edgarwright")
+	password2, _ := hashSaltPassword("astonmartin")
 
-	accounts["johndoe"] = User {
-		Username: "johndoe",
-		Name: "John Doe",
+	accounts["sebvet"] = User {
+		Username: "sebvet",
+		Name: "Sebastian Vettel",
 		PasswordHash: password1,
 	}
 
-	accounts["bobross"] = User {
-		Username: "bobross",
-		Name: "Bob Ross",
+	accounts["babydriver"] = User {
+		Username: "babydriver",
+		Name: "Ansel Elgort",
 		PasswordHash: password2,
 	}
 
