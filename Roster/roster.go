@@ -16,9 +16,12 @@ type driver struct {
 	Rate int `json:"rate"`
 }
 
+type driverRequest struct {
+	Token string `json:"token"`
+}
 
 type driverRateRequest struct {
-	Token string `json:"token"`
+	driverRequest
 	Rate int `json:"rate"`
 }
 
@@ -56,7 +59,7 @@ func joinRoster(w http.ResponseWriter, r *http.Request) {
 
 	var requestData driverRateRequest
 	err = json.Unmarshal(body, &requestData)
-	
+
 	if err != nil {
 		log.Println("Error: Request is missing JWT token or rate.")
 		w.WriteHeader(http.StatusBadRequest)
@@ -105,12 +108,107 @@ func joinRoster(w http.ResponseWriter, r *http.Request) {
 
 // Requires authentication
 func leaveRoster(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	
+	if err != nil {
+		log.Println("Error: Parsing request to leave roster failed.")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("{\"error\": \"Parsing request to leave roster failed\"}"))
+		return
+	}
 
+	var requestData driverRequest
+	err = json.Unmarshal(body, &requestData)
+
+	if err != nil {
+		log.Println("Error: Request is missing JWT token.")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("{\"error\": \"Request is missing JWT token\"}"))
+		return
+	}
+
+	user, err := authenticateUser(requestData.Token)
+
+	if err != nil {
+		log.Println("Error: Invalid JWT token.")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("{\"error\": \"Invalid JWT token\"}"))
+		return
+	}
+
+	_, ok := Roster[user.Username]
+
+	// Check if driver is already in roster.
+	if !ok {
+		log.Println("Error: User is not in roster.")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("{\"error\": \"User is not in roster\"}"))
+		return
+	}
+
+	delete(Roster, user.Username)
+	log.Printf("User %s removed from roster.", user.Username)
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // Requires authentication
 func changeRate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
+	body, err := ioutil.ReadAll(r.Body)
+	
+	if err != nil {
+		log.Println("Error: Parsing request to update rate failed.")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("{\"error\": \"Parsing request to join roster failed\"}"))
+		return
+	}
+
+	var requestData driverRateRequest
+	err = json.Unmarshal(body, &requestData)
+	log.Println(requestData.Rate)
+
+	if err != nil {
+		log.Println("Error: Request is missing JWT token or rate.")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("{\"error\": \"Request is missing JWT token or rate\"}"))
+		return
+	}
+
+	user, err := authenticateUser(requestData.Token)
+
+	if err != nil {
+		log.Println("Error: Invalid JWT token.")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("{\"error\": \"Invalid JWT token\"}"))
+		return
+	}
+
+	rosterUser, ok := Roster[user.Username]
+
+	// Check if driver is already in roster.
+	if !ok {
+		log.Println("Error: User is not in roster.")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("{\"error\": \"User is not in roster\"}"))
+		return
+	}
+
+	// Cannot have a rate of less than or equal to 0p.
+	if requestData.Rate <= 0 {
+		log.Println("Error: Invalid rate value supplied.")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("{\"error\": \"Invalid rate value supplied\"}"))
+		return
+	}
+
+	rosterUser.Rate = requestData.Rate
+	// Roster[rosterUser.Username] = rosterUser
+
+	log.Printf("Rate updated to %dp for User %s", rosterUser.Rate, rosterUser.Username)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(rosterUser)
 }
 
 func handleRequests() {
