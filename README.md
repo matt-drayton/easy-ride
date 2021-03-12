@@ -28,3 +28,5 @@ The application has been dockerized.
 In order to build the services, use the `docker-compose build` command in the root `easy-ride` directory.
 
 Then, to run the services, use the `docker-compose up` command in the root `easy-ride` directory. 
+
+Note that the `Directions` service requires a Google Maps API key to be set as an environment variable. The easiest way to do this is to add a file `.env` within the `Directions` directory. Within `.env`, set the API key in the format `MAPS_API_KEY=cAbfJkBfABfNAXfaqQvPugjljVV-AquTzpzT1k0`. This is just an example key, you will need to set your own. 
