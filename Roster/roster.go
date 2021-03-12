@@ -167,7 +167,6 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 
 	var requestData driverRateRequest
 	err = json.Unmarshal(body, &requestData)
-	log.Println(requestData.Rate)
 
 	if err != nil {
 		log.Println("Error: Request is missing JWT token or rate.")
