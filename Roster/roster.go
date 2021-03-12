@@ -159,7 +159,7 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	
 	if err != nil {
-		log.Printlf("Error: Parsing request to update rate failed : %s", err)
+		log.Printf("Error: Parsing request to update rate failed : %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("{\"error\": \"Parsing request to join roster failed\"}"))
 		return
@@ -169,7 +169,7 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &requestData)
 
 	if err != nil {
-		log.Printlf("Error: Request is missing JWT token or rate : %s", err)
+		log.Printf("Error: Request is missing JWT token or rate : %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("{\"error\": \"Request is missing JWT token or rate\"}"))
 		return
@@ -178,7 +178,7 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 	user, err := authenticateUser(requestData.Token)
 
 	if err != nil {
-		log.Printlf("Error: Invalid JWT token : %s", err)
+		log.Printf("Error: Invalid JWT token : %s", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("{\"error\": \"Invalid JWT token\"}"))
 		return

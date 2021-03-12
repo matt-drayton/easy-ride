@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -79,7 +80,7 @@ func calculateCost(routeDetails route, availableDrivers []driver) int {
 	cheapestDriver := getCheapestDriver(availableDrivers)
 	noOfDrivers := len(availableDrivers)
 
-	cost := cheapestDriver.Rate * routeDetails.TotalDistance
+	cost := cheapestDriver.Rate * (routeDetails.TotalDistance / 1000)
 
 	// Check if over half of distance is on A-Roads.
 	// Integer division is ideal here. No need to convert types.
@@ -91,6 +92,12 @@ func calculateCost(routeDetails route, availableDrivers []driver) int {
 		cost *= 2
 	}
 
+	currentHour, _, _ := time.Now().Clock()
+
+	if currentHour >= 23 || currentHour <= 6 {
+		cost *= 2
+	}
+	
 	return cost
 }
 

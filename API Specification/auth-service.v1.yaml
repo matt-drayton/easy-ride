@@ -1,0 +1,134 @@
+openapi: 3.0.0
+info:
+  title: auth-service
+  version: '1.0'
+  description: API responsible for creating and verifying JWT tokens
+servers:
+  - url: 'http://localhost:8000'
+paths:
+  /login:
+    post:
+      summary: ''
+      operationId: post-login
+      responses:
+        '200':
+          description: 'Returns a JWT with a 5 minute expiry duration. '
+          headers: {}
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  token:
+                    type: string
+                    minLength: 1
+                required:
+                  - token
+              examples:
+                example-1:
+                  value:
+                    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImJhYnlkcml2ZXIiLCJuYW1lIjoiIiwiZXhwIjoxNjE1NTQ2ODI1fQ.5L6LpasNsBoBGQJaSObJYbZRuB2-p4BCp77aGQznRA4
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Incorrect credentials provided
+      description: Returns a JWT token when correct credentials are provided.
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              description: ''
+              type: object
+              properties:
+                username:
+                  type: string
+                  minLength: 1
+                  readOnly: true
+                password:
+                  type: string
+                  minLength: 1
+                  readOnly: true
+              required:
+                - username
+                - password
+            examples:
+              example-1:
+                value:
+                  username: sebvet
+                  password: astonmartin
+              example-2:
+                value:
+                  username: babydriver
+                  password: edgarwright
+        description: Username and password in x-www-form-urlencoded format.
+  '/validate/{token}':
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+        description: JWT Token
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  username:
+                    type: string
+                    minLength: 1
+                  name:
+                    type: string
+                    minLength: 1
+                required:
+                  - username
+                  - name
+              examples:
+                example-1:
+                  value:
+                    username: babydriver
+                    name: Ansel Elgort
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: Invalid or incorrect JWT token received.
+      operationId: get-validate-token
+      description: Validate a JWT token
+components:
+  schemas: {}
+  securitySchemes: {}
+  responses: {}
