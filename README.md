@@ -6,6 +6,8 @@ EasyRide is a fictional UK based ride-sharing app powered by microservices writt
 
 Full API documentation can be found in the `API Specification` folder. The API is described by `.yml` folders that have been exported to `html` using Redoc. 
 
+The API documentation includes an internal and external address for each service. The internal address is used for microservices to communicate with each other. The external address is used for requests from outside of the application. In this instance, external addresses are all on http://localhost with varying ports.
+
 ## Services
 
 The EasyRide service has been broken into the following microservices, each of which resides in its own directory:
