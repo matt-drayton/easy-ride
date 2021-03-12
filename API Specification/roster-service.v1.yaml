@@ -11,7 +11,7 @@ servers:
 paths:
   /roster:
     get:
-      summary: Roster Operations
+      summary: get-roster
       tags: []
       responses:
         '200':
