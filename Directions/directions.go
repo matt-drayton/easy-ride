@@ -27,7 +27,6 @@ func calcARoadDistance(s []maps.Route) int {
 
 		// Find steps that have A roads appearing in the instructions
 		if regexA.MatchString(step.HTMLInstructions) == true {
-			fmt.Println(regexA.FindString(step.HTMLInstructions))
 			dist = dist + step.Distance.Meters
 		}
 	}

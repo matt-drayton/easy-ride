@@ -214,9 +214,10 @@ func getCheapestDriver(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	lowestRate := -1
-	lowestDriver driver
+	var lowestDriver driver
 
 	if len(Roster) == 0 {
+		log.Println("Error: No drivers are available currently.")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("{\"error\": \"No drivers are available currently.\"}"))
 		return
@@ -233,10 +234,11 @@ func getCheapestDriver(w http.ResponseWriter, r *http.Request) {
 
 		if currentDriver.Rate < lowestRate {
 			lowestDriver = currentDriver
-			lowestRate = currentDriver.rate
+			lowestRate = currentDriver.Rate
 		}
 	}
 
+	log.Println("Found cheapest driver %s", lowestDriver.Username)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(lowestDriver)
 }
