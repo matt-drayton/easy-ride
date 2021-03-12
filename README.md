@@ -8,6 +8,8 @@ Full API documentation can be found in the `API Specification` folder. The API i
 
 The API documentation includes an internal and external address for each service. The internal address is used for microservices to communicate with each other. The external address is used for requests from outside of the application. In this instance, external addresses are all on http://localhost with varying ports.
 
+Other documents such as testing curl commands and the final report can be found in the `Documents` directory. Documents are available in both `.md` and `.pdf` format.
+
 ## Services
 
 The EasyRide service has been broken into the following microservices, each of which resides in its own directory:
