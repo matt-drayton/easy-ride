@@ -99,8 +99,6 @@ func validateToken(w http.ResponseWriter, r *http.Request) {
 
 	claims := token.Claims.(*Claims)
 
-	
-
 	// Since account deletion is not required in spec, we cannot have a valid JWT for an account that does not exist.
 	// Ok to ignore error value below.
 	user, _ := accounts[claims.Username]
@@ -126,8 +124,8 @@ func verifyPassword(hash, password string) bool {
 
 func initialiseAccounts() {
 	// Controlled case should not have error, safe to ignore here.
-	password1, _ := hashSaltPassword("edgarwright")
-	password2, _ := hashSaltPassword("astonmartin")
+	password1, _ := hashSaltPassword("astonmartin")
+	password2, _ := hashSaltPassword("edgarwright")
 
 	accounts["sebvet"] = User {
 		Username: "sebvet",

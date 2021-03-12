@@ -20,3 +20,9 @@ services:
       - Directions/.env
     ports:
       - "8002:8000"
+  journey-service:
+      build:
+        context: .
+        dockerfile: Journey/Dockerfile
+      ports:
+        - "8003:8000"

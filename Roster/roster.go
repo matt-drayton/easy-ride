@@ -25,6 +25,11 @@ type driverRateRequest struct {
 	Rate int `json:"rate"`
 }
 
+type cheapestDriverResponse struct {
+	CheapestDriver driver `json:"cheapest_driver"`
+	NoOfDrivers int `json:"no_of_drivers"`
+}
+
 var Roster = map[string]driver{}
 
 
@@ -238,9 +243,14 @@ func getCheapestDriver(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	response := cheapestDriverResponse{
+		CheapestDriver: lowestDriver,
+		NoOfDrivers: len(Roster),
+	}
+
 	log.Println("Found cheapest driver %s", lowestDriver.Username)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(lowestDriver)
+	json.NewEncoder(w).Encode(response)
 }
 
 func handleRequests() {
@@ -249,7 +259,6 @@ func handleRequests() {
 	router.HandleFunc("/roster", leaveRoster).Methods("DELETE")
 	router.HandleFunc("/roster", changeRate).Methods("PUT")
 	router.HandleFunc("/roster", getCheapestDriver).Methods("GET")
-
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 
