@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  auth-service:
+    build:
+      context: .
+      dockerfile: Auth/Dockerfile
+    ports:
+      - "8000:8000"
+  roster-service:
+    build:
+      context: .
+      dockerfile: Roster/Dockerfile
+    ports:
+      - "8001:8000"
+  directions-service:
+    build:
+      context: .
+      dockerfile: Directions/Dockerfile
+    env_file:
+      - Directions/.env
+    ports:
+      - "8002:8000"
