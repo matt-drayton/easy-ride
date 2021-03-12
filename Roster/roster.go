@@ -210,11 +210,43 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(rosterUser)
 }
 
+func getCheapestDriver(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	lowestRate := -1
+	lowestDriver driver
+
+	if len(Roster) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("{\"error\": \"No drivers are available currently.\"}"))
+		return
+	}
+
+	// Find the driver with the lowest rate. This will always be the best driver for the route.
+	for _, currentDriver := range Roster {
+		// If first pass, initialise
+		if lowestRate == -1 {
+			lowestRate = currentDriver.Rate
+			lowestDriver = currentDriver
+			continue
+		}
+
+		if currentDriver.Rate < lowestRate {
+			lowestDriver = currentDriver
+			lowestRate = currentDriver.rate
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(lowestDriver)
+}
+
 func handleRequests() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/roster", joinRoster).Methods("POST")
 	router.HandleFunc("/roster", leaveRoster).Methods("DELETE")
 	router.HandleFunc("/roster", changeRate).Methods("PUT")
+	router.HandleFunc("/roster", getCheapestDriver).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
