@@ -9,11 +9,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type cheapestDriverResponse struct {
-	CheapestDriver driver `json:"cheapest_driver"`
-	NoOfDrivers int `json:"no_of_drivers"`
-}
-
 type driver struct {
 	Username string `json:"username"`
 	Name string `json:"name"`
@@ -43,7 +38,8 @@ func getJourney(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.Get(fmt.Sprintf("http://directions-service:8000/directions/%s/%s", origin, destination))
 
 	if err != nil {
-
+		log.Printf("Error fecthing roster: %s", err)
+		return
 	}
 
 	var distances route
@@ -51,18 +47,24 @@ func getJourney(w http.ResponseWriter, r *http.Request) {
 
 	// Get cheapest driver
 	resp, err = http.Get("http://roster-service:8000/roster")
-	var fetchedCheapestDriverResponse cheapestDriverResponse
-	json.NewDecoder(r.Body).Decode(&fetchedCheapestDriverResponse)
+	if err != nil {
+		log.Printf("Error fecthing roster: %s", err)
 
+		return
+	}
+	var fetchedDrivers []driver 
+	json.NewDecoder(resp.Body).Decode(&fetchedDrivers)
 
-	cost := calculateCost(distances, fetchedCheapestDriverResponse)
+	cheapestDriver := getCheapestDriver(fetchedDrivers)
+
+	cost := calculateCost(distances, fetchedDrivers)
 
 	response := journey {
 		StartPoint: origin,
 		EndPoint: destination,
 		TotalDistance: distances.TotalDistance,
 		ARoadDistance: distances.ARoadDistance,
-		BestDriver: fetchedCheapestDriverResponse.CheapestDriver,
+		BestDriver: cheapestDriver,
 		Cost: cost,
 	}
 
@@ -73,11 +75,11 @@ func getJourney(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func calculateCost(routeDetails route, driverDetails cheapestDriverResponse) int {
-	cheapestDriverDetails := driverDetails.CheapestDriver
-	noOfDrivers := driverDetails.NoOfDrivers
+func calculateCost(routeDetails route, availableDrivers []driver) int {
+	cheapestDriver := getCheapestDriver(availableDrivers)
+	noOfDrivers := len(availableDrivers)
 
-	cost := cheapestDriverDetails.Rate * routeDetails.TotalDistance
+	cost := cheapestDriver.Rate * routeDetails.TotalDistance
 
 	// Check if over half of distance is on A-Roads.
 	// Integer division is ideal here. No need to convert types.
@@ -90,6 +92,28 @@ func calculateCost(routeDetails route, driverDetails cheapestDriverResponse) int
 	}
 
 	return cost
+}
+
+func getCheapestDriver(drivers []driver) driver{
+
+	lowestRate := -1
+	var lowestDriver driver
+
+	// Find the driver with the lowest rate. This will always be the best driver for the route.
+	for _, currentDriver := range drivers {
+		// If first pass, initialise. Lowest rate can never naturally be -1
+		if lowestRate == -1 {
+			lowestRate = currentDriver.Rate
+			lowestDriver = currentDriver
+			continue
+		}
+
+		if currentDriver.Rate < lowestRate {
+			lowestDriver = currentDriver
+			lowestRate = currentDriver.Rate
+		}
+	}
+	return lowestDriver
 }
 
 func handleRequests() {

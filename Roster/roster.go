@@ -25,11 +25,6 @@ type driverRateRequest struct {
 	Rate int `json:"rate"`
 }
 
-type cheapestDriverResponse struct {
-	CheapestDriver driver `json:"cheapest_driver"`
-	NoOfDrivers int `json:"no_of_drivers"`
-}
-
 var Roster = map[string]driver{}
 
 
@@ -56,7 +51,7 @@ func joinRoster(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	
 	if err != nil {
-		log.Println("Error: Parsing request to join roster failed.")
+		log.Printf("Error: Parsing request to join roster failed: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("{\"error\": \"Parsing request to join roster failed\"}"))
 		return
@@ -66,7 +61,7 @@ func joinRoster(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &requestData)
 
 	if err != nil {
-		log.Println("Error: Request is missing JWT token or rate.")
+		log.Printf("Error: Request is missing JWT token or rate: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("{\"error\": \"Request is missing JWT token or rate\"}"))
 		return
@@ -75,7 +70,7 @@ func joinRoster(w http.ResponseWriter, r *http.Request) {
 	user, err := authenticateUser(requestData.Token)
 
 	if err != nil {
-		log.Println("Error: Invalid JWT token.")
+		log.Printf("Error: Invalid JWT token: %s", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("{\"error\": \"Invalid JWT token\"}"))
 		return
@@ -116,7 +111,7 @@ func leaveRoster(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	
 	if err != nil {
-		log.Println("Error: Parsing request to leave roster failed.")
+		log.Printf("Error: Parsing request to leave roster failed: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("{\"error\": \"Parsing request to leave roster failed\"}"))
 		return
@@ -126,7 +121,7 @@ func leaveRoster(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &requestData)
 
 	if err != nil {
-		log.Println("Error: Request is missing JWT token.")
+		log.Printf("Error: Request is missing JWT token: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("{\"error\": \"Request is missing JWT token\"}"))
 		return
@@ -135,7 +130,7 @@ func leaveRoster(w http.ResponseWriter, r *http.Request) {
 	user, err := authenticateUser(requestData.Token)
 
 	if err != nil {
-		log.Println("Error: Invalid JWT token.")
+		log.Printf("Error: Invalid JWT token: %s", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("{\"error\": \"Invalid JWT token\"}"))
 		return
@@ -164,7 +159,7 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	
 	if err != nil {
-		log.Println("Error: Parsing request to update rate failed.")
+		log.Printlf("Error: Parsing request to update rate failed : %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("{\"error\": \"Parsing request to join roster failed\"}"))
 		return
@@ -174,7 +169,7 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &requestData)
 
 	if err != nil {
-		log.Println("Error: Request is missing JWT token or rate.")
+		log.Printlf("Error: Request is missing JWT token or rate : %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("{\"error\": \"Request is missing JWT token or rate\"}"))
 		return
@@ -183,7 +178,7 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 	user, err := authenticateUser(requestData.Token)
 
 	if err != nil {
-		log.Println("Error: Invalid JWT token.")
+		log.Printlf("Error: Invalid JWT token : %s", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("{\"error\": \"Invalid JWT token\"}"))
 		return
@@ -208,49 +203,24 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rosterUser.Rate = requestData.Rate
-	// Roster[rosterUser.Username] = rosterUser
+
+	// Replace record in map with updated rate
+	Roster[rosterUser.Username] = rosterUser
 
 	log.Printf("Rate updated to %dp for User %s", rosterUser.Rate, rosterUser.Username)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(rosterUser)
 }
 
-func getCheapestDriver(w http.ResponseWriter, r *http.Request) {
+func getDrivers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	lowestRate := -1
-	var lowestDriver driver
-
-	if len(Roster) == 0 {
-		log.Println("Error: No drivers are available currently.")
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("{\"error\": \"No drivers are available currently.\"}"))
-		return
+	var returnList []driver
+	for _, value := range Roster {
+		returnList = append(returnList, value)
 	}
-
-	// Find the driver with the lowest rate. This will always be the best driver for the route.
-	for _, currentDriver := range Roster {
-		// If first pass, initialise. Lowest rate can never naturally be -1
-		if lowestRate == -1 {
-			lowestRate = currentDriver.Rate
-			lowestDriver = currentDriver
-			continue
-		}
-
-		if currentDriver.Rate < lowestRate {
-			lowestDriver = currentDriver
-			lowestRate = currentDriver.Rate
-		}
-	}
-
-	response := cheapestDriverResponse{
-		CheapestDriver: lowestDriver,
-		NoOfDrivers: len(Roster),
-	}
-
-	log.Println("Found cheapest driver %s", lowestDriver.Username)
+	log.Println("Requesting driver roster info.")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(returnList)
 }
 
 func handleRequests() {
@@ -258,7 +228,7 @@ func handleRequests() {
 	router.HandleFunc("/roster", joinRoster).Methods("POST")
 	router.HandleFunc("/roster", leaveRoster).Methods("DELETE")
 	router.HandleFunc("/roster", changeRate).Methods("PUT")
-	router.HandleFunc("/roster", getCheapestDriver).Methods("GET")
+	router.HandleFunc("/roster", getDrivers).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 

@@ -65,7 +65,7 @@ func signIn(w http.ResponseWriter, r *http.Request) {
 	tokenString, err := token.SignedString(jwtKey)
 
 	if err != nil {
-		log.Printf("Error: Could not create JWT for user %s.", username)
+		log.Printf("Error: Could not create JWT for user %s : %s", username, err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
@@ -91,7 +91,7 @@ func validateToken(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil || !token.Valid {
-		log.Println("Invalid or incorrect JWT token received.")
+		log.Printf("Invalid or incorrect JWT token received : %s", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("{\"error\": \"Invalid or incorrect JWT token received.\"}"))
 		return

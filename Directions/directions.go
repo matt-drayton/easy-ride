@@ -68,7 +68,7 @@ func getRouteDistance(w http.ResponseWriter, r *http.Request) {
 	totalDistance, aRoadDistance, err := getRouteDistanceHelper(origin, destination)
 
 	if err != nil {
-		log.Printf("Error: Could not find route between %s and %s.", origin, destination)
+		log.Printf("Error: Could not find route between %s and %s : %s", origin, destination, err)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprintf("{\"error\": \"Could not find route between %s and %s\"}", origin, destination)))
 		return
@@ -78,7 +78,7 @@ func getRouteDistance(w http.ResponseWriter, r *http.Request) {
 		TotalDistance: totalDistance,
 		ARoadDistance: aRoadDistance,
 	}
-
+	log.Printf("Finding distance between %s and %s", origin, destination)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(route)
 }
