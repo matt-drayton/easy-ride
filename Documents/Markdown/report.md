@@ -20,7 +20,7 @@ easy-ride
 	|___ Markdown - Markdown representations of documents
 ```
 
-
+Note: Read the README in the root directory for further information including test accounts and `docker-compose` instructions.
 
 ## Architecture
 
@@ -60,6 +60,8 @@ Status codes are used with error messages to convey the success or failure of an
 | 400         | Bad Request                       |
 | 401         | Unauthorized (likely invalid JWT) |
 | 500         | Unexpected internal error         |
+
+Authorisation has been implemented using JWT. Sending a correct username and password to the Auth service will generate a JWT that is active for 5 minutes. Token refreshing has not been implemented. This is something that could be achieved by the frontend re-calling the login endpoint when receiving a `401` response.
 
 ## Testing with CURL
 
