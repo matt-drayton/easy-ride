@@ -31,6 +31,7 @@ type journey struct {
 }
 
 func getJourney(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
 	origin := vars["from"]
 	destination := vars["to"]
@@ -39,7 +40,9 @@ func getJourney(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.Get(fmt.Sprintf("http://directions-service:8000/directions/%s/%s", origin, destination))
 
 	if err != nil {
-		log.Printf("Error fecthing roster: %s", err)
+		log.Printf("Error: Could not fetch route between %s and %s : %s", origin, destination, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fmt.Sprintf("{\"error\": \"Could not fetch route between %s and %s.\"}", origin, destination)))
 		return
 	}
 
@@ -50,9 +53,11 @@ func getJourney(w http.ResponseWriter, r *http.Request) {
 	resp, err = http.Get("http://roster-service:8000/roster")
 	if err != nil {
 		log.Printf("Error fecthing roster: %s", err)
-
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("{\"error\": \"Could not fetch roster data\"}"))
 		return
 	}
+	
 	var fetchedDrivers []driver 
 	json.NewDecoder(resp.Body).Decode(&fetchedDrivers)
 
@@ -97,7 +102,7 @@ func calculateCost(routeDetails route, availableDrivers []driver) int {
 	if currentHour >= 23 || currentHour <= 6 {
 		cost *= 2
 	}
-	
+
 	return cost
 }
 
