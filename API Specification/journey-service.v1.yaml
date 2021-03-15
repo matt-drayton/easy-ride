@@ -80,6 +80,23 @@ paths:
                       name: Ansel Elgort
                       rate: 15
                     cost: 840420
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: string
+                    minLength: 1
+                required:
+                  - error
+              examples:
+                example-1:
+                  value:
+                    error: No available drivers in roster
         '500':
           description: Internal Server Error
           content:
