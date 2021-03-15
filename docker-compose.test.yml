@@ -1,0 +1,34 @@
+version: "3.9"
+services:
+  auth-service:
+    build:
+      context: .
+      dockerfile: Auth/Dockerfile
+    ports:
+      - "8000:8000"
+  auth-service-test:
+    build:
+      context: .
+      dockerfile: Auth/Dockerfile.test
+    ports:
+      - "7000:8000"
+  # roster-service:
+  #   build:
+  #     context: .
+  #     dockerfile: Roster/Dockerfile.test
+  #   ports:
+  #     - "8001:8000"
+  # directions-service:
+  #   build:
+  #     context: .
+  #     dockerfile: Directions/Dockerfile.test
+  #   env_file:
+  #     - Directions/.env
+  #   ports:
+  #     - "8002:8000"
+  # journey-service:
+  #     build:
+  #       context: .
+  #       dockerfile: Journey/Dockerfile.test
+  #     ports:
+  #       - "8003:8000"

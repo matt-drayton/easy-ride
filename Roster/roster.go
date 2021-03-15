@@ -161,7 +161,7 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error: Parsing request to update rate failed : %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("{\"error\": \"Parsing request to join roster failed\"}"))
+		w.Write([]byte("{\"error\": \"Parsing request to update roster rate failed\"}"))
 		return
 	}
 
