@@ -12,23 +12,29 @@ services:
       dockerfile: Auth/Dockerfile.test
     ports:
       - "7000:8000"
-  # roster-service:
-  #   build:
-  #     context: .
-  #     dockerfile: Roster/Dockerfile.test
-  #   ports:
-  #     - "8001:8000"
-  # directions-service:
-  #   build:
-  #     context: .
-  #     dockerfile: Directions/Dockerfile.test
-  #   env_file:
-  #     - Directions/.env
-  #   ports:
-  #     - "8002:8000"
-  # journey-service:
-  #     build:
-  #       context: .
-  #       dockerfile: Journey/Dockerfile.test
-  #     ports:
-  #       - "8003:8000"
+  roster-service:
+    build:
+      context: .
+      dockerfile: Roster/Dockerfile
+    ports:
+      - "8001:8000"
+  roster-service-test:
+    build:
+      context: .
+      dockerfile: Roster/Dockerfile.test
+    ports:
+      - "7001:8000"
+  directions-service:
+    build:
+      context: .
+      dockerfile: Directions/Dockerfile
+    env_file:
+      - Directions/.env
+    ports:
+      - "8002:8000"
+  journey-service:
+      build:
+        context: .
+        dockerfile: Journey/Dockerfile
+      ports:
+        - "8003:8000"
