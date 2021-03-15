@@ -1,0 +1,8 @@
+FROM golang:1.15
+
+WORKDIR /app/
+COPY Auth ./Auth
+RUN go get github.com/gorilla/mux golang.org/x/crypto/bcrypt github.com/dgrijalva/jwt-go
+
+WORKDIR /app/Auth
+CMD ["go", "test"]
