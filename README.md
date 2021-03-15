@@ -33,6 +33,10 @@ Then, to run the services, use the `docker-compose up` command in the root `easy
 
 Note that the `Directions` service requires a Google Maps API key to be set as an environment variable. The easiest way to do this is to add a file `.env` within the `Directions` directory. Within `.env`, set the API key in the format `MAPS_API_KEY=cAbfJkBfABfNAXfaqQvPugjljVV-AquTzpzT1k0`. This is just an example key, you will need to set your own. 
 
+### Testing
+
+As well as a list of CURL commands made available in the `Documents` directory, the application also has unit tests for the `Auth` and `Roster` microservices. These are best run using the test dockerfile by running `docker-compose -f docker-compose.test.yml build` followed by `docker-compose -f docker-compose.test.yml up`. This will launch the microservices as usual, but will also run the test suite for the two modules. 
+
 ## User Credentials
 
 For the purposes of testing, there are two drivers signed up to the system. To begin with, they are not in the roster. Their credentials are:
@@ -41,3 +45,4 @@ For the purposes of testing, there are two drivers signed up to the system. To b
 - `babydriver` : `edgarwright`
 
 The specification does not mention the need to be able to sign-up or remove users from the system dynamically. As such, there is no way to do this. 
+

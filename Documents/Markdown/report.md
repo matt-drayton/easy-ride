@@ -63,7 +63,13 @@ Status codes are used with error messages to convey the success or failure of an
 
 Authorisation has been implemented using JWT. Sending a correct username and password to the Auth service will generate a JWT that is active for 5 minutes. Token refreshing has not been implemented. This is something that could be achieved by the frontend re-calling the login endpoint when receiving a `401` response.
 
-## Testing with CURL
+## Testing
+
+### Unit Tests
+
+The project has unit tests for the `Auth` and `Roster` modules. The project has separate Dockerfiles (denoted as `Dockerfile.test`) in each service, as well as as separate `docker-compose.test.yml` file to build the whole application. This can be used with the `docker-compose -f docker-compose.test.yml build` followed by `docker-compose -f docker-compose.test.yml up` to build the application. 
+
+### Testing with CURL
 
 Below is a subset of the CURL commands used to test the application. A full list of commands can be found in `full curl commands` in the `Documents` directory. 
 
