@@ -52,7 +52,7 @@ func getJourney(w http.ResponseWriter, r *http.Request) {
 	// Get cheapest driver
 	resp, err = http.Get("http://roster-service:8000/roster")
 	if err != nil {
-		log.Printf("Error fecthing roster: %s", err)
+		log.Printf("Error fetching roster: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("{\"error\": \"Could not fetch roster data\"}"))
 		return
@@ -60,6 +60,13 @@ func getJourney(w http.ResponseWriter, r *http.Request) {
 	
 	var fetchedDrivers []driver 
 	json.NewDecoder(resp.Body).Decode(&fetchedDrivers)
+
+	if len(fetchedDrivers) == 0 {
+		log.Println("Error no available drivers")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("{\"error\": \"No available drivers in roster.\"}"))
+		return
+	}
 
 	cheapestDriver := getCheapestDriver(fetchedDrivers)
 
