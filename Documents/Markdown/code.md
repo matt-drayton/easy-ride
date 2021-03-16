@@ -1,4 +1,4 @@
-## docker-compose.yml
+# docker-compose.yml
 
 ```yaml
 version: "3.9"
@@ -31,20 +31,52 @@ services:
         - "8003:8000"
 ```
 
-# Auth
+# docker-compose.test.yml
 
-## Dockerfile
-
-```dockerfile
-FROM golang:1.15
-
-WORKDIR /app/
-COPY Auth ./Auth
-RUN go get github.com/gorilla/mux golang.org/x/crypto/bcrypt github.com/dgrijalva/jwt-go
-
-EXPOSE 8000
-CMD ["go", "run", "/app/Auth/auth.go"]
+```yaml
+version: "3.9"
+services:
+  auth-service:
+    build:
+      context: .
+      dockerfile: Auth/Dockerfile
+    ports:
+      - "8000:8000"
+  auth-service-test:
+    build:
+      context: .
+      dockerfile: Auth/Dockerfile.test
+    ports:
+      - "7000:8000"
+  roster-service:
+    build:
+      context: .
+      dockerfile: Roster/Dockerfile
+    ports:
+      - "8001:8000"
+  roster-service-test:
+    build:
+      context: .
+      dockerfile: Roster/Dockerfile.test
+    ports:
+      - "7001:8000"
+  directions-service:
+    build:
+      context: .
+      dockerfile: Directions/Dockerfile
+    env_file:
+      - Directions/.env
+    ports:
+      - "8002:8000"
+  journey-service:
+      build:
+        context: .
+        dockerfile: Journey/Dockerfile
+      ports:
+        - "8003:8000"
 ```
+
+# Auth
 
 ## auth.go
 
@@ -206,12 +238,101 @@ func main() {
 }
 ```
 
-# Directions
+## auth_test.go
 
-## .env
+```go
+package main
 
-```.env
-MAPS_API_KEY=YOUR_KEY_HERE
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+)
+
+type Token struct {
+	Token string `json:"token"`
+}
+
+type driver struct {
+	Username string `json:"username"`
+	Name string `json:"name"`
+	Rate int `json:"rate"`
+}
+
+func TestAuth(t *testing.T) {
+	// Sleep to ensure auth service has finished build
+	time.Sleep(3 * time.Second)
+	// Valid Credentials
+	data := url.Values{}
+	data.Set("username", "sebvet")
+	data.Set("password", "astonmartin")
+	client := &http.Client{}
+
+	req, err := http.NewRequest("POST", "http://auth-service:8000/login", strings.NewReader(data.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+    req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+
+	resp, err := client.Do(req) 
+
+	if err != nil || resp.StatusCode != 200 {
+		log.Println("Failed valid credentials sign-in unit test.")
+		log.Println(err)
+		log.Println(resp.StatusCode)
+		t.Fail()
+	}
+	var token Token
+	json.NewDecoder(resp.Body).Decode(&token)
+	
+	// Invalid Credentials
+	data = url.Values{}
+	data.Set("username", "fakename")
+	data.Set("password", "fakepassword")
+	req, err = http.NewRequest("POST", "http://auth-service:8000/login", strings.NewReader(data.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+    req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+
+	resp, err = client.Do(req) 
+	if resp.StatusCode == 200 {
+		log.Println(err)
+		log.Println(resp.StatusCode)
+		log.Println("Failed invalid credentials sign-in unit test.")
+		t.Fail()
+	}
+
+	// Take token from valid login and verify
+	r, err := http.Get("http://auth-service:8000/validate/"+token.Token)
+	
+	if err != nil || r.StatusCode != http.StatusOK {
+		log.Println("Failed to validate correct JWT")
+		t.Fail()
+	}
+
+	var authenticatedDriver driver
+	expectedDriver := driver {
+		Username: "sebvet",
+		Name: "Sebastian Vettel",
+		Rate: 0,
+	}
+	json.NewDecoder(r.Body).Decode(&authenticatedDriver)
+	
+	if authenticatedDriver != expectedDriver {
+		log.Println("Failed to fetch correct user data from JWT")
+		t.Fail()
+	}
+
+	r, err = http.Get("http://auth-service:8000/validate/"+"RANDOMNOTVALIDTOKEN")
+	
+	if r.StatusCode == http.StatusOK {
+		log.Println("Failed to correctly reject invalid token")
+		t.Fail()
+	}
+
+}
 ```
 
 ## Dockerfile
@@ -220,12 +341,27 @@ MAPS_API_KEY=YOUR_KEY_HERE
 FROM golang:1.15
 
 WORKDIR /app/
-COPY Directions ./Directions
-RUN go get github.com/gorilla/mux github.com/kr/pretty googlemaps.github.io/maps
+COPY Auth ./Auth
+RUN go get github.com/gorilla/mux golang.org/x/crypto/bcrypt github.com/dgrijalva/jwt-go
 
 EXPOSE 8000
-CMD ["go", "run", "/app/Directions/directions.go"]
+CMD ["go", "run", "/app/Auth/auth.go"]
 ```
+
+## Dockerfile.test
+
+```go
+FROM golang:1.15
+
+WORKDIR /app/
+COPY Auth ./Auth
+RUN go get github.com/gorilla/mux golang.org/x/crypto/bcrypt github.com/dgrijalva/jwt-go
+
+WORKDIR /app/Auth
+CMD ["go", "test"]
+```
+
+# Directions
 
 ## directions.go
 
@@ -327,20 +463,20 @@ func main() {
 }
 ```
 
-# Journey
-
 ## Dockerfile
 
 ```dockerfile
 FROM golang:1.15
 
 WORKDIR /app/
-COPY Journey ./Journey
-RUN go get github.com/gorilla/mux 
+COPY Directions ./Directions
+RUN go get github.com/gorilla/mux github.com/kr/pretty googlemaps.github.io/maps
 
 EXPOSE 8000
-CMD ["go", "run", "/app/Journey/journey.go"]
+CMD ["go", "run", "/app/Directions/directions.go"]
 ```
+
+# Journey
 
 ## journey.go
 
@@ -399,7 +535,7 @@ func getJourney(w http.ResponseWriter, r *http.Request) {
 	// Get cheapest driver
 	resp, err = http.Get("http://roster-service:8000/roster")
 	if err != nil {
-		log.Printf("Error fecthing roster: %s", err)
+		log.Printf("Error fetching roster: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("{\"error\": \"Could not fetch roster data\"}"))
 		return
@@ -407,6 +543,13 @@ func getJourney(w http.ResponseWriter, r *http.Request) {
 	
 	var fetchedDrivers []driver 
 	json.NewDecoder(resp.Body).Decode(&fetchedDrivers)
+
+	if len(fetchedDrivers) == 0 {
+		log.Println("Error no available drivers")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("{\"error\": \"No available drivers in roster.\"}"))
+		return
+	}
 
 	cheapestDriver := getCheapestDriver(fetchedDrivers)
 
@@ -488,20 +631,20 @@ func main() {
 }
 ```
 
-# Roster
-
 ## Dockerfile
 
 ```dockerfile
 FROM golang:1.15
 
 WORKDIR /app/
-COPY Roster ./Roster
+COPY Journey ./Journey
 RUN go get github.com/gorilla/mux 
 
 EXPOSE 8000
-CMD ["go", "run", "/app/Roster/roster.go"]
+CMD ["go", "run", "/app/Journey/journey.go"]
 ```
+
+# Roster
 
 ## roster.go
 
@@ -669,7 +812,7 @@ func changeRate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error: Parsing request to update rate failed : %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("{\"error\": \"Parsing request to join roster failed\"}"))
+		w.Write([]byte("{\"error\": \"Parsing request to update roster rate failed\"}"))
 		return
 	}
 
@@ -745,4 +888,147 @@ func main() {
 	handleRequests()
 }
 ```
+
+## roster_test.go
+
+```go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"log"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+)
+
+type Token struct {
+	Token string `json:"token"`
+}
+
+type rosterReq struct {
+	Token string `json:"token"`
+	Rate int `json:"rate"`
+}
+
+func TestRoster(t *testing.T) {
+	// Sleep to ensure other services have finished build
+	time.Sleep(3 * time.Second)
+
+	// Valid Credentials. We can assume this works. If it doesn't, it'll be caught in auth_test.go
+	data := url.Values{}
+	data.Set("username", "sebvet")
+	data.Set("password", "astonmartin")
+	client := &http.Client{}
+
+	req, _ := http.NewRequest("POST", "http://auth-service:8000/login", strings.NewReader(data.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+    req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+
+	resp, _ := client.Do(req) 
+
+	var token Token
+	json.NewDecoder(resp.Body).Decode(&token)
+
+	// Test getting roster. Should be empty. 
+	resp, err := http.Get("http://roster-service:8000/roster")
+	if err != nil {
+		log.Println("Failed fetching roster")
+		t.Fail()
+	}
+	
+	var fetchedDrivers []driver 
+	json.NewDecoder(resp.Body).Decode(&fetchedDrivers)
+
+	if len(fetchedDrivers) != 0 {
+		log.Println("Failed fetching roster when it should be empty")
+		t.Fail()
+	}
+
+	// Try joining roster
+	joinRosterReq := rosterReq{
+		Token: token.Token,
+		Rate: 5,
+	}
+	payload := new(bytes.Buffer)
+	json.NewEncoder(payload).Encode(joinRosterReq)
+	resp, err = http.Post("http://roster-service:8000/roster", "application/json", payload)
+
+	var returnedDriver driver
+	json.NewDecoder(resp.Body).Decode(&returnedDriver)
+
+	if returnedDriver.Rate != 5 {
+		log.Println("Failed to set rate correctly")
+		t.Fail()
+	}
+
+	// Test updating rate
+	joinRosterReq.Rate = 10
+	payload = new(bytes.Buffer)
+	json.NewEncoder(payload).Encode(joinRosterReq)
+	req, _ = http.NewRequest("PUT", "http://roster-service:8000/roster", payload)
+	req.Header.Add("Content-Type", "application/json")
+	resp, _ = client.Do(req) 
+
+	json.NewDecoder(resp.Body).Decode(&returnedDriver)
+
+	if returnedDriver.Rate != 10 {
+		log.Println("Failed to update rate correctly")
+		t.Fail()
+	}
+
+	// Test leaving roster
+	payload = new(bytes.Buffer)
+	json.NewEncoder(payload).Encode(token)
+	req, _ = http.NewRequest("DELETE", "http://roster-service:8000/roster", payload)
+	req.Header.Add("Content-Type", "application/json")
+	resp, _ = client.Do(req) 
+
+	// Get users in roster to see if removal has worked
+	resp, err = http.Get("http://roster-service:8000/roster")
+	if err != nil {
+		log.Println("Failed fetching roster")
+		t.Fail()
+	}
+	
+	json.NewDecoder(resp.Body).Decode(&fetchedDrivers)
+
+	if resp.StatusCode != 200 || len(fetchedDrivers) != 0{
+		log.Println("Failed to leave roster")
+		t.Fail()
+	}
+}	
+```
+
+## Dockerfile
+
+```dockerfile
+FROM golang:1.15
+
+WORKDIR /app/
+COPY Roster ./Roster
+RUN go get github.com/gorilla/mux 
+
+EXPOSE 8000
+CMD ["go", "run", "/app/Roster/roster.go"]
+```
+
+## Dockerfile.test
+
+```dockerfile
+FROM golang:1.15
+
+WORKDIR /app/
+COPY Roster ./Roster
+RUN go get github.com/gorilla/mux 
+
+WORKDIR /app/Roster
+CMD ["go", "test"]
+```
+
+
 
